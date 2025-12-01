@@ -1,12 +1,15 @@
 from django.db import models
 
-# Create your models here.
-from django.db import models
+
+class SafeJSONField(models.JSONField):
+    """JSONField that tolerates already-parsed values coming from the driver."""
+
+    def from_db_value(self, value, expression, connection):
+        if isinstance(value, (dict, list)):
+            return value
+        return super().from_db_value(value, expression, connection)
 
 
-# ---------------------------------------------------------
-# Base class for ALL n8n read-only models
-# ---------------------------------------------------------
 class N8nBase(models.Model):
     class Meta:
         abstract = True
@@ -14,24 +17,20 @@ class N8nBase(models.Model):
         app_label = "n8n_mirror"
 
 
-# ---------------------------------------------------------
-# workflow_entity
-# ---------------------------------------------------------
 class WorkflowEntity(N8nBase):
     id = models.CharField(primary_key=True, max_length=36)
-    
     name = models.CharField(max_length=128)
     active = models.BooleanField()
-    nodes = models.JSONField()
-    connections = models.JSONField()
+    nodes = SafeJSONField()
+    connections = SafeJSONField()
     createdAt = models.DateTimeField()
     updatedAt = models.DateTimeField()
-    settings = models.JSONField(null=True, blank=True)
-    staticData = models.JSONField(null=True, blank=True)
-    pinData = models.JSONField(null=True, blank=True)
+    settings = SafeJSONField(null=True, blank=True)
+    staticData = SafeJSONField(null=True, blank=True)
+    pinData = SafeJSONField(null=True, blank=True)
     versionId = models.CharField(max_length=36)
     triggerCount = models.IntegerField()
-    meta = models.JSONField(null=True, blank=True)
+    meta = SafeJSONField(null=True, blank=True)
     parentFolderId = models.CharField(max_length=36, null=True, blank=True)
     isArchived = models.BooleanField()
     versionCounter = models.IntegerField()
@@ -41,12 +40,8 @@ class WorkflowEntity(N8nBase):
         db_table = "workflow_entity"
 
 
-# ---------------------------------------------------------
-# execution_entity
-# ---------------------------------------------------------
 class ExecutionEntity(N8nBase):
-    id = models.IntegerField(primary_key=True)
-    
+    id = models.BigIntegerField(primary_key=True)
     finished = models.BooleanField()
     mode = models.CharField(max_length=255)
     retryOf = models.CharField(max_length=255, null=True, blank=True)
@@ -63,12 +58,42 @@ class ExecutionEntity(N8nBase):
         db_table = "execution_entity"
 
 
-# ---------------------------------------------------------
-# credentials_entity
-# ---------------------------------------------------------
+class ExecutionData(N8nBase):
+    executionId = models.OneToOneField(
+        ExecutionEntity, on_delete=models.DO_NOTHING, db_column="executionId", primary_key=True
+    )
+    workflowData = models.TextField()
+    data = models.TextField()
+
+    class Meta(N8nBase.Meta):
+        db_table = "execution_data"
+
+
+class ExecutionAnnotations(N8nBase):
+    executionId = models.OneToOneField(
+        ExecutionEntity, on_delete=models.DO_NOTHING, db_column="executionId", primary_key=True
+    )
+    vote = models.CharField(max_length=6, null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+    createdAt = models.DateTimeField()
+    updatedAt = models.DateTimeField()
+
+    class Meta(N8nBase.Meta):
+        db_table = "execution_annotations"
+
+
+class ExecutionMetadata(N8nBase):
+    executionId = models.ForeignKey(ExecutionEntity, on_delete=models.DO_NOTHING, db_column="executionId")
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+
+    class Meta(N8nBase.Meta):
+        db_table = "execution_metadata"
+        unique_together = (("executionId", "key"),)
+
+
 class CredentialsEntity(N8nBase):
     id = models.CharField(primary_key=True, max_length=36)
-    
     name = models.CharField(max_length=128)
     data = models.TextField()
     type = models.CharField(max_length=128)
@@ -80,20 +105,16 @@ class CredentialsEntity(N8nBase):
         db_table = "credentials_entity"
 
 
-# ---------------------------------------------------------
-# user
-# ---------------------------------------------------------
 class UserEntity(N8nBase):
     id = models.UUIDField(primary_key=True)
-    
     email = models.CharField(max_length=255, null=True, blank=True)
     firstName = models.CharField(max_length=32, null=True, blank=True)
     lastName = models.CharField(max_length=32, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
-    personalizationAnswers = models.JSONField(null=True, blank=True)
+    personalizationAnswers = SafeJSONField(null=True, blank=True)
     createdAt = models.DateTimeField()
     updatedAt = models.DateTimeField()
-    settings = models.JSONField(null=True, blank=True)
+    settings = SafeJSONField(null=True, blank=True)
     disabled = models.BooleanField()
     mfaEnabled = models.BooleanField()
     mfaSecret = models.TextField(null=True, blank=True)
@@ -105,12 +126,23 @@ class UserEntity(N8nBase):
         db_table = "user"
 
 
-# ---------------------------------------------------------
-# tag_entity
-# ---------------------------------------------------------
+class UserApiKeys(N8nBase):
+    id = models.CharField(primary_key=True, max_length=36)
+    userId = models.ForeignKey(UserEntity, on_delete=models.DO_NOTHING, db_column="userId")
+    label = models.CharField(max_length=100)
+    apiKey = models.CharField(max_length=255, unique=True, db_column="apiKey")
+    createdAt = models.DateTimeField()
+    updatedAt = models.DateTimeField()
+    scopes = models.TextField(null=True, blank=True)
+    audience = models.CharField(max_length=255)
+
+    class Meta(N8nBase.Meta):
+        db_table = "user_api_keys"
+        unique_together = (("userId", "label"),)
+
+
 class TagEntity(N8nBase):
     id = models.CharField(primary_key=True, max_length=36)
-    
     name = models.CharField(max_length=24)
     createdAt = models.DateTimeField()
     updatedAt = models.DateTimeField()
@@ -119,14 +151,9 @@ class TagEntity(N8nBase):
         db_table = "tag_entity"
 
 
-# ---------------------------------------------------------
-# shared_workflow
-# (composite primary key)
-# ---------------------------------------------------------
 class SharedWorkflow(N8nBase):
-    workflowId = models.CharField(max_length=36)
+    workflowId = models.CharField(primary_key=True, max_length=36)
     projectId = models.CharField(max_length=36)
-    
     role = models.TextField()
     createdAt = models.DateTimeField()
     updatedAt = models.DateTimeField()
@@ -136,14 +163,9 @@ class SharedWorkflow(N8nBase):
         unique_together = (("workflowId", "projectId"),)
 
 
-# ---------------------------------------------------------
-# webhook_entity
-# composite PK: webhookPath + method
-# ---------------------------------------------------------
 class WebhookEntity(N8nBase):
-    webhookPath = models.CharField(max_length=255)
+    webhookPath = models.CharField(primary_key=True, max_length=255)
     method = models.CharField(max_length=255)
-
     node = models.CharField(max_length=255)
     webhookId = models.CharField(max_length=255, null=True, blank=True)
     pathLength = models.IntegerField(null=True, blank=True)

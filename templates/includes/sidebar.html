@@ -3,7 +3,7 @@
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
     <div class="m-header">
-      <a href="{% url "index" %}" class="b-brand text-primary">
+      <a href="{% url "apps.pages:index" %}" class="b-brand text-primary">
         <!-- ========   Change your logo from here   ============ -->
         <img src="{% static 'assets/images/logo-white.svg' %}" class="img-fluid" alt="logo">
       </a>
@@ -32,11 +32,17 @@
           <label>Apps</label>
         </li>
         <li class="pc-item">
-          <a href="{% url "index" %}" class="pc-link">
+          <a href="{% url "apps.pages:index" %}" class="pc-link">
             <span class="pc-micon">
               <i data-feather="home"></i>
             </span>
             <span class="pc-mtext">Dashboard</span>
+          </a>
+        </li>
+        <li class="pc-item">
+          <a href="{% url 'apps.pages:credentials' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="key"></i></span>
+            <span class="pc-mtext">Credentials</span>
           </a>
         </li>
         <li class="pc-item">
@@ -92,13 +98,13 @@
 
         {% if not request.user.is_authenticated %}
         <li class="pc-item">
-          <a href="{% url "login" %}" class="pc-link">
+          <a href="{% url "accounts_plus:login" %}" class="pc-link">
             <span class="pc-micon"><i data-feather="lock"></i></span>
             <span class="pc-mtext">Login</span>
           </a>
         </li>
         <li class="pc-item">
-          <a href="{% url "register" %}" class="pc-link">
+          <a href="{% url "accounts_plus:register" %}" class="pc-link">
             <span class="pc-micon"><i data-feather="user-plus"></i></span>
             <span class="pc-mtext">Register</span>
           </a>
@@ -166,12 +172,6 @@
               </ul>
             </li>
           </ul>
-        </li>
-        <li class="pc-item">
-          <a href="{% url "sample_page" %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="sidebar"></i></span>
-            <span class="pc-mtext">Sample page</span>
-          </a>
         </li>
 
       </ul>

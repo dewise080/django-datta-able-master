@@ -13,12 +13,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.authtoken.views import obtain_auth_token # <-- NEW
 
 urlpatterns = [
-    path('', include('apps.pages.urls')),
+    path("", include(("accounts_plus.urls", "accounts_plus"), namespace="accounts_plus")),
+    path('', include(("apps.pages.urls", "apps.pages"), namespace="apps.pages")),
     path("", include("apps.dyn_dt.urls")),
     path("", include("apps.dyn_api.urls")),
     path('charts/', include('apps.charts.urls')),
@@ -34,3 +36,10 @@ try:
     urlpatterns.append( path("login/jwt/", view=obtain_auth_token) )
 except:
     pass
+
+# Debug toolbar URLs (only in DEBUG mode)
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        path("__debug__/", include(debug_toolbar.urls)),
+    ] + urlpatterns

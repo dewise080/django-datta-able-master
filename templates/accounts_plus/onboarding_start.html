@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Onboarding{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-12">
+            <div class="page-header-title">
+              <h5 class="mb-0">Welcome to your n8n workspace</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-4">Finish onboarding to start managing workflows.</p>
+        <a class="btn btn-primary me-2" href="{% url 'onboarding_complete' %}">Mark Onboarding Complete</a>
+        <a class="btn btn-outline-primary me-2" href="{% url 'index' %}">Skip for now</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -30,6 +30,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'Super_Secr3t_9999')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 #print(' DEBUG -> ' + str(DEBUG) ) 
 
+# IPs allowed to see debug toolbar
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
 ALLOWED_HOSTS = ['*']
 
 # Add here your deployment HOSTS
@@ -46,6 +51,7 @@ if RENDER_EXTERNAL_HOSTNAME:
 INSTALLED_APPS = [
     'jazzmin',
     "django.contrib.admin",
+    "accounts_plus",
     'admin_datta.apps.AdminDattaConfig',
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -69,9 +75,13 @@ INSTALLED_APPS = [
     'rest_framework',            # Include DRF           # <-- NEW 
     'rest_framework.authtoken',  
     "n8n_mirror",
+
+    # Debug
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -140,7 +150,7 @@ else:
     }
 
 DATABASES["n8n"] = {
-    "ENGINE": "django.db.backends.postgresql",
+    "ENGINE": "django.db.backends.postgresql_psycopg2",
     "NAME": N8N_DB_NAME,
     "USER": N8N_DB_USER,
     "PASSWORD": N8N_DB_PASSWORD,
@@ -149,6 +159,9 @@ DATABASES["n8n"] = {
 }
 
 DATABASE_ROUTERS = ["project_root.db_routers.N8nRouter"]
+
+# Disable migrations for unmanaged n8n mirror models
+MIGRATION_MODULES = {"n8n_mirror": None}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -199,8 +212,17 @@ STATICFILES_DIRS = (
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Session settings - keep users logged in
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session persists after browser close
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh session on each request
+SESSION_COOKIE_NAME = 'n8n_mirror_sessionid'  # Unique session cookie name
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # ### DYNAMIC_DATATB Settings ###
 DYNAMIC_DATATB = {

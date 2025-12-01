@@ -37,6 +37,27 @@ class ExecutionAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     ordering = ("-createdAt",)
 
 
+@admin.register(models.ExecutionData)
+class ExecutionDataAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ("executionId",)
+    search_fields = ("executionId__id",)
+    ordering = ("-executionId",)
+
+
+@admin.register(models.ExecutionAnnotations)
+class ExecutionAnnotationsAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ("executionId", "vote", "createdAt", "updatedAt")
+    search_fields = ("executionId__id", "note")
+    ordering = ("-updatedAt",)
+
+
+@admin.register(models.ExecutionMetadata)
+class ExecutionMetadataAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ("executionId", "key", "value")
+    search_fields = ("executionId__id", "key", "value")
+    ordering = ("executionId", "key")
+
+
 @admin.register(models.CredentialsEntity)
 class CredentialsAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     list_display = ("id", "name", "type", "isManaged", "createdAt", "updatedAt")
@@ -73,3 +94,10 @@ class WebhookAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     search_fields = ("webhookPath", "method", "workflowId", "node")
     list_filter = ("method",)
     ordering = ("webhookPath",)
+
+
+@admin.register(models.UserApiKeys)
+class UserApiKeysAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ("id", "label", "userId", "apiKey", "createdAt", "updatedAt")
+    search_fields = ("id", "label", "apiKey", "userId__id")
+    ordering = ("-updatedAt",)
